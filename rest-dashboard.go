@@ -285,14 +285,14 @@ func (r *Client) GetDashboardPermsByUID(ctx context.Context, boardUID uint) ([]P
 // same data as it exported by Grafana.
 //
 // Reflects GET /api/dashboards/id/:dashboardId/permissions API call.
-func (r *Client) GetRawDashboardPermsByUID(ctx context.Context, boardUID uint) ([]byte, error) {
+func (r *Client) GetRawDashboardPermsByUID(ctx context.Context, boardUID string) ([]byte, error) {
 	var (
 		raw    []byte
 		result interface{}
 		code   int
 		err    error
 	)
-	if raw, code, err = r.get(ctx, fmt.Sprintf("/api/dashboards/uid/%d/permissions", boardUID), nil); err != nil {
+	if raw, code, err = r.get(ctx, fmt.Sprintf("/api/dashboards/uid/%s/permissions", boardUID), nil); err != nil {
 		return nil, err
 	}
 	if code != 200 {
