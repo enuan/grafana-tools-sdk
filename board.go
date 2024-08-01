@@ -272,7 +272,7 @@ func (b *Board) UpdateSlug() string {
 	return b.Slug
 }
 
-//GetPermissionItem build PermissionItem from Permission
+// GetPermissionItem build PermissionItem from Permission
 func (p *Permission) GetPermissionItem() PermissionItem {
 	pi := PermissionItem{}
 	if p.Role != "" {
