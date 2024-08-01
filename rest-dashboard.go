@@ -57,13 +57,13 @@ type BoardProperties struct {
 	FolderURL   string    `json:"folderUrl"`
 }
 
-//RawBoardRequest struct that wraps Board and parameters being sent
+// RawBoardRequest struct that wraps Board and parameters being sent
 type RawBoardRequest struct {
 	Dashboard  []byte
 	Parameters SetDashboardParams
 }
 
-//MarshalJSON serializes the request to match the expectations of the grafana API.
+// MarshalJSON serializes the request to match the expectations of the grafana API.
 // Additionally, if preseveID is false, then the dashboard id is set to 0
 func (d RawBoardRequest) MarshalJSON() ([]byte, error) {
 	var raw []byte
@@ -258,6 +258,54 @@ func (r *Client) GetRawDashboardPerms(ctx context.Context, boardId uint) ([]byte
 	return []byte(raw), err
 }
 
+// GetDashboardPermsByUID loads a dashboard from Grafana instance.
+//
+// Reflects GET /api/dashboards/uid/:dashboardUID/permissions API call.
+func (r *Client) GetDashboardPermsByUID(ctx context.Context, boardUID uint) ([]Permission, error) {
+	var perms []Permission
+	raw, err := r.GetRawDashboardPermsByUID(ctx, boardUID)
+	if err != nil {
+		return perms, errors.Wrap(err, "get raw dashboard permissions")
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&perms); err != nil {
+		return perms, errors.Wrap(err, "unmarshal board permissions")
+	}
+	return perms, err
+}
+
+// GetRawDashboardPermsByUID loads dashboard permissions JSON from Grafana instance.
+// Contrary to GetDashboard() it not unpack loaded JSON to Board structure.
+// Instead it returns it as byte slice.
+// It guarantee that data of dashboard permissions returned untouched by conversion
+// with Permission so no matter how properly fields from a current version of Grafana mapped to
+// our Board fields.
+// It useful for backuping purposes when you want a dashboard permission exactly with
+// same data as it exported by Grafana.
+//
+// Reflects GET /api/dashboards/id/:dashboardId/permissions API call.
+func (r *Client) GetRawDashboardPermsByUID(ctx context.Context, boardUID uint) ([]byte, error) {
+	var (
+		raw    []byte
+		result interface{}
+		code   int
+		err    error
+	)
+	if raw, code, err = r.get(ctx, fmt.Sprintf("/api/dashboards/uid/%d/permissions", boardUID), nil); err != nil {
+		return nil, err
+	}
+	if code != 200 {
+		return nil, fmt.Errorf("HTTP error %d: returns %s", code, raw)
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&result); err != nil {
+		return nil, errors.Wrap(err, "unmarshal board")
+	}
+	return []byte(raw), err
+}
+
 // GetRawDashboardByUID loads a dashboard and its metadata from Grafana by dashboard uid.
 //
 // Reflects GET /api/dashboards/uid/:uid API call.
@@ -391,7 +439,7 @@ func (r *Client) SetDashboard(ctx context.Context, board Board, params SetDashbo
 	return resp, nil
 }
 
-//SetRawDashboardWithParam sends the serialized along with request parameters
+// SetRawDashboardWithParam sends the serialized along with request parameters
 func (r *Client) SetRawDashboardWithParam(ctx context.Context, request RawBoardRequest) (StatusMessage, error) {
 	var (
 		rawResp []byte
@@ -471,7 +519,7 @@ func (r *Client) DeleteDashboardByUID(ctx context.Context, uid string) (StatusMe
 	return reply, err
 }
 
-//UpdateDashboardPermissions updates the permissions of the dashboard specified by boardId.
+// UpdateDashboardPermissions updates the permissions of the dashboard specified by boardId.
 // Reflects POST /api/dashboards/id/:dashboardId/permissions API call.
 func (r *Client) UpdateDashboardPermissions(ctx context.Context, boardPerms BoardPermissions, boardId uint) (StatusMessage, error) {
 	var (
