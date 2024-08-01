@@ -261,7 +261,7 @@ func (r *Client) GetRawDashboardPerms(ctx context.Context, boardId uint) ([]byte
 // GetDashboardPermsByUID loads a dashboard from Grafana instance.
 //
 // Reflects GET /api/dashboards/uid/:dashboardUID/permissions API call.
-func (r *Client) GetDashboardPermsByUID(ctx context.Context, boardUID uint) ([]Permission, error) {
+func (r *Client) GetDashboardPermsByUID(ctx context.Context, boardUID string) ([]Permission, error) {
 	var perms []Permission
 	raw, err := r.GetRawDashboardPermsByUID(ctx, boardUID)
 	if err != nil {
